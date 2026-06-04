@@ -1,0 +1,83 @@
+name: Test Template Generation
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  test-gitlab:
+    name: Generate GitLab variant
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - name: Install copier
+        run: pipx install copier
+      - name: Generate
+        run: |
+          copier copy . /tmp/gl --trust --defaults \
+            -d project_name=demo-docs \
+            -d ci_platform=gitlab \
+            -d gitlab_url=gitlab.example.com \
+            -d gitlab_registry=gitlab.example.com:5050/demo-docs
+      - name: Assert GitLab files
+        run: |
+          test -f /tmp/gl/.gitlab-ci.yml || { echo "missing .gitlab-ci.yml"; exit 1; }
+          test ! -d /tmp/gl/.github || { echo ".github should not exist"; exit 1; }
+          test -f /tmp/gl/just/cicd.just || { echo "missing cicd.just"; exit 1; }
+          test -f /tmp/gl/.copier-answers.yml || { echo "missing answers file"; exit 1; }
+          grep -q "just cicd::lint"  /tmp/gl/.gitlab-ci.yml
+          grep -q "just cicd::build" /tmp/gl/.gitlab-ci.yml
+          grep -q "just cicd::pages" /tmp/gl/.gitlab-ci.yml
+          grep -q "gitlab.example.com:5050/demo-docs" /tmp/gl/just/cicd.just
+          echo "GitLab variant OK"
+
+  test-github:
+    name: Generate GitHub variant
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - name: Install copier
+        run: pipx install copier
+      - name: Generate
+        run: |
+          copier copy . /tmp/gh --trust --defaults \
+            -d project_name=demo-docs \
+            -d ci_platform=github \
+            -d github_registry=ghcr.io/acme/demo-docs
+      - name: Assert GitHub files
+        run: |
+          test -f /tmp/gh/.github/workflows/ci.yml || { echo "missing ci.yml"; exit 1; }
+          test -f /tmp/gh/.github/workflows/pages.yml || { echo "missing pages.yml"; exit 1; }
+          test ! -f /tmp/gh/.gitlab-ci.yml || { echo ".gitlab-ci.yml should not exist"; exit 1; }
+          test -f /tmp/gh/just/cicd.just || { echo "missing cicd.just"; exit 1; }
+          grep -q "just cicd::lint"  /tmp/gh/.github/workflows/ci.yml
+          grep -q "just cicd::build" /tmp/gh/.github/workflows/ci.yml
+          grep -q "just cicd::pages" /tmp/gh/.github/workflows/pages.yml
+          grep -q "ghcr.io/acme/demo-docs" /tmp/gh/just/cicd.just
+          echo "GitHub variant OK"
+
+  test-build:
+    name: Generated site builds (zensical)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Install copier
+        run: pipx install copier
+      - name: Generate
+        run: |
+          copier copy . /tmp/site --trust --defaults \
+            -d project_name=demo-docs \
+            -d ci_platform=github \
+            -d github_registry=ghcr.io/acme/demo-docs
+      - name: Build site
+        working-directory: /tmp/site
+        run: |
+          uv sync
+          uv run zensical build
+          test -f site/index.html || { echo "site/index.html not built"; exit 1; }
+          echo "Generated site builds OK"
