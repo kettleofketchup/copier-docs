@@ -29,4 +29,11 @@ features = [
   "search.highlight",
   "content.code.copy",
   "content.tabs.link",
+  "content.tooltips",
 ]
+
+# Site-wide glossary: auto-append abbreviations to every page.
+[project.markdown_extensions.pymdownx.snippets]
+base_path = ["docs", "."]
+auto_append = ["includes/abbreviations.md"]
+check_paths = true
