@@ -1,0 +1,63 @@
+_min_copier_version: "9.0.0"
+_subdirectory: template
+_templates_suffix: .jinja
+
+# Reject leftover merge-conflict / .rej files after `copier update`
+_message_after_copy: |
+  Your docs site '{{ project_name }}' is ready.
+
+  Next:
+    cd {{ _copier_conf.dst_path }}
+    ./dev               # install uv + just, sync deps, install lefthook
+    just docs::live     # live preview at http://localhost:8000
+
+project_name:
+  type: str
+  help: "Project / repository name (used for the directory and image name)"
+  validator: "{% if not project_name %}project_name is required{% endif %}"
+
+site_name:
+  type: str
+  help: "Documentation site title (shown in the header)"
+  default: "{{ project_name }}"
+
+site_description:
+  type: str
+  help: "Short description of the site"
+  default: "Documentation for {{ project_name }}"
+
+site_url:
+  type: str
+  help: "Published site URL (used for sitemap + instant navigation)"
+  default: "https://{{ project_name }}.example.com/"
+
+author:
+  type: str
+  help: "Site author / owning team"
+  default: "Docs team"
+
+ci_platform:
+  type: str
+  help: "CI/CD platform for build + publish"
+  default: gitlab
+  choices:
+    "GitLab CI": gitlab
+    "GitHub Actions": github
+
+gitlab_url:
+  type: str
+  when: "{{ ci_platform == 'gitlab' }}"
+  help: "GitLab instance URL (e.g. gitlab.example.com)"
+  default: "gitlab.lan"
+
+gitlab_registry:
+  type: str
+  when: "{{ ci_platform == 'gitlab' }}"
+  help: "Container registry path for the nginx docs image"
+  default: "{{ gitlab_url }}:5050/{{ project_name }}"
+
+github_registry:
+  type: str
+  when: "{{ ci_platform == 'github' }}"
+  help: "GitHub Container Registry path"
+  default: "ghcr.io/{{ project_name }}"

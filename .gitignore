@@ -1,0 +1,10 @@
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+
+# Local template-generation test output
+/.copier-test/
+
+# OS
+.DS_Store

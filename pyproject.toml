@@ -1,0 +1,11 @@
+[project]
+name = "copier-docs"
+version = "0.1.0"
+description = "Copier template for Zensical documentation sites (GitLab + GitHub CI)"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "copier>=9.4.0",
+]
