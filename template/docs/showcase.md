@@ -1,8 +1,8 @@
 # Showcase
 
 A tour of the formatting available in this template. Hover any abbreviation like
-HTML or CSS to see the tooltip (defined once in `docs/includes/abbreviations.md`
-and reused via a Markdown include).
+HTML or CSS to see the tooltip — defined once in `includes/abbreviations.md` and
+auto-appended to every page via `pymdownx.snippets`.
 
 ## Admonitions
 
@@ -91,10 +91,10 @@ $$
 
 ## Markdown includes
 
-Reuse shared snippets across pages with `pymdownx.snippets`:
+Reuse shared snippets across pages with `pymdownx.snippets`. The glossary in
+`includes/abbreviations.md` is appended to every page automatically (see
+`zensical.toml`), but you can also pull any file inline:
 
 ```text
 --8<-- "includes/abbreviations.md"
 ```
-
---8<-- "includes/abbreviations.md"
