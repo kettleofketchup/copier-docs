@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1
+
+# --- Stage 1: build the static site with uv + zensical ---
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+WORKDIR /docs
+ENV UV_LINK_MODE=copy
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev
+COPY . .
+RUN uv run --frozen --no-dev zensical build
+
+# --- Stage 2: serve the built site with nginx ---
+FROM nginx:alpine
+COPY --from=builder /docs/site /usr/share/nginx/html
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80

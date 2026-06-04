@@ -1,0 +1,30 @@
+# {{ site_name }}
+
+Welcome to **{{ site_name }}** — {{ site_description }}
+
+This site was generated from the
+[copier-docs](https://github.com/kettleofketchup/copier-docs) template and built
+with [Zensical](https://zensical.org).
+
+<div class="grid cards" markdown>
+
+-   :material-rocket-launch: **Get started**
+
+    ---
+
+    Run `just docs::live` and start editing Markdown in `docs/`.
+
+-   :material-palette: **See what's possible**
+
+    ---
+
+    The [Showcase](showcase.md) page demonstrates admonitions, syntax
+    highlighting, content tabs, diagrams, and Markdown includes.
+
+</div>
+
+## Editing these docs
+
+Add Markdown files under `docs/` and list them in the `nav` table in
+`zensical.toml`. Validate locally with `just docs::validate`, then open a merge
+request — CI builds and publishes the site automatically.
