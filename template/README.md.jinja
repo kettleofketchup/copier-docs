@@ -1,0 +1,49 @@
+# {{ site_name }}
+
+{{ site_description }}
+
+Generated from the [`copier-docs`](https://github.com/kettleofketchup/copier-docs)
+template (Zensical + {% if ci_platform == 'gitlab' %}GitLab CI{% else %}GitHub Actions{% endif %}).
+
+## Quick start
+
+```bash
+./dev               # install uv + just, sync deps, install lefthook
+just docs::live     # live-reload preview at http://localhost:8000
+```
+
+## Common commands
+
+```bash
+just docs::live       # local live-reload preview
+just docs::build      # build static site into site/
+just docs::validate   # lefthook checks (markdown/spelling/ruff) + clean build
+just docker::run      # serve the built site via nginx at http://localhost:8080
+just version::bump patch && just version::tag   # cut a release tag
+```
+
+## Updating from the template
+
+```bash
+just copier::update   # pull the latest copier-docs changes (commit your work first)
+```
+
+## CI/CD
+
+{% if ci_platform == 'gitlab' -%}
+`.gitlab-ci.yml` runs lint + build on every push/MR, publishes the site to
+**GitLab Pages** on `{{ '$CI_DEFAULT_BRANCH' }}`, and pushes an nginx image to
+`{{ gitlab_registry }}`. CI jobs are thin wrappers around `just cicd::*`.
+{%- else -%}
+`.github/workflows/ci.yml` runs lint + build on pushes/PRs and pushes an nginx
+image to `{{ github_registry }}` on tags; `.github/workflows/pages.yml` deploys
+the site to **GitHub Pages** on the default branch. Workflows are thin wrappers
+around `just cicd::*`.
+{%- endif %}
+
+## Editing the docs
+
+All content is Markdown under `docs/`. Add new pages to the `nav` table in
+`zensical.toml`. The [Showcase](docs/showcase.md) page demonstrates the available
+formatting (admonitions, code highlighting, content tabs, card grids, diagrams,
+and Markdown includes).

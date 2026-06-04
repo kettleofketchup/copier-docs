@@ -1,0 +1,18 @@
+# lefthook git hooks — run via `uv` so tools come from the dev dependency group.
+# Install with `lefthook install` (the `dev` recipe does this for you).
+
+pre-commit:
+  parallel: true
+  commands:
+    markdownlint:
+      glob: "*.md"
+      run: uv run pymarkdown --disable-rules MD013,MD033,MD041 scan {staged_files}
+    codespell:
+      glob: "*.{md,toml,yml,yaml}"
+      run: uv run codespell {staged_files}
+    ruff-format:
+      glob: "*.py"
+      run: uv run ruff format {staged_files}
+    ruff-check:
+      glob: "*.py"
+      run: uv run ruff check --fix {staged_files}

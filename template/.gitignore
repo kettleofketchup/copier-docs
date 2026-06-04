@@ -1,0 +1,17 @@
+# Build output
+/site/
+/public/
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+
+# Zensical cache
+.cache/
+
+# Copier update leftovers
+*.rej
+
+# OS
+.DS_Store

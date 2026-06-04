@@ -1,0 +1,32 @@
+[project]
+site_name = "{{ site_name }}"
+site_url = "{{ site_url }}"
+site_description = "{{ site_description }}"
+site_author = "{{ author }}"
+copyright = "&copy; {{ author }}"
+docs_dir = "docs"
+site_dir = "site"
+use_directory_urls = true
+dev_addr = "localhost:8000"
+
+nav = [
+  {"Home" = "index.md"},
+  {"Showcase" = "showcase.md"},
+]
+
+[project.theme]
+variant = "classic"
+features = [
+  "navigation.instant",
+  "navigation.instant.prefetch",
+  "navigation.tracking",
+  "navigation.tabs",
+  "navigation.sections",
+  "navigation.top",
+  "navigation.footer",
+  "toc.follow",
+  "search.suggest",
+  "search.highlight",
+  "content.code.copy",
+  "content.tabs.link",
+]

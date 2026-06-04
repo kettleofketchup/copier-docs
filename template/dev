@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Bootstrap: ensure uv + just are installed, then run `just dev`.
+
+if ! command -v uv >/dev/null 2>&1; then
+    echo "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+if ! command -v just >/dev/null 2>&1; then
+    echo "Installing just..."
+    if command -v cargo >/dev/null 2>&1; then
+        cargo install just
+    else
+        curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+fi
+
+just dev "$@"
