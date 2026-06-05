@@ -6,7 +6,7 @@ pre-commit:
   commands:
     markdownlint:
       glob: "*.md"
-      run: uv run pymarkdown --disable-rules MD013,MD033,MD041 scan {staged_files}
+      run: uv run pymarkdown --disable-rules MD013,MD033,MD041,MD030,MD046 scan {staged_files}
     codespell:
       glob: "*.{md,toml,yml,yaml}"
       run: uv run codespell {staged_files}

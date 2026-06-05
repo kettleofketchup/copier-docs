@@ -14,7 +14,7 @@ VERSION := `git describe --tags --always 2>/dev/null || echo "dev"`
 [no-cd]
 [group('cicd')]
 lint:
-    uv run pymarkdown --disable-rules MD013,MD033,MD041 scan docs
+    uv run pymarkdown --disable-rules MD013,MD033,MD041,MD030,MD046 scan docs
     uv run codespell docs
 
 # Build the static site into site/
