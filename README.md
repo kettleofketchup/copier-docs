@@ -49,9 +49,10 @@ Copier performs a three-way merge against the version recorded in
 ## Developing this template
 
 ```bash
-./dev
-just copier::test        # generate gitlab + github sample projects into .copier-test/
+./dev                    # installs uv + just, syncs deps, installs the lefthook hook
+just copier::test        # generate gitlab + github variants, build the site, assert, clean up
 ```
 
-CI (`.github/workflows/test-template.yml`) generates both variants on every push
-and asserts the right files are produced.
+A lefthook `pre-commit` hook runs `just copier::test` automatically — but **only
+when `copier.yml` or anything under `template/` is staged**, so unrelated commits
+stay fast. CI (`.github/workflows/test-template.yml`) runs the same checks on push.
