@@ -20,4 +20,5 @@ if ! command -v just >/dev/null 2>&1; then
 fi
 
 uv sync
-echo "Ready. Try 'just copier::test' to generate sample projects."
+uv run lefthook install
+echo "Ready. Try 'just copier::test' to generate + build sample projects."

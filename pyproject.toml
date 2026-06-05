@@ -8,4 +8,5 @@ dependencies = []
 [dependency-groups]
 dev = [
     "copier>=9.4.0",
+    "lefthook>=1.7.0",
 ]

@@ -1,0 +1,12 @@
+# Git hooks for developing this template.
+# Install with `lefthook install` (the `dev` script does this for you).
+#
+# On commit, regenerate + build sample projects — but ONLY when the template
+# itself changes (copier.yml or anything under template/), so unrelated commits
+# stay fast.
+
+pre-commit:
+  commands:
+    test-template:
+      glob: "{copier.yml,template/**/*}"
+      run: just copier::test
