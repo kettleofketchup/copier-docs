@@ -2,10 +2,9 @@ set quiet
 
 import 'just/dev.just'            # `just dev` — merged into root namespace
 
-mod docs 'just/docs.just'        # docs::live, docs::build, docs::lint, docs::validate,
-                                 # docs::clean, docs::image-build, docs::image-run
-mod version 'just/version.just'  # version::show, version::bump, version::tag
-mod copier 'just/copier.just'    # copier::update, copier::diff, copier::recopy
+mod docs 'just/docs.just'        # docs::live/build/lint/validate/clean/image-build/image-run
+mod version 'just/version.just'  # version::show/bump/tag
+mod copier 'just/copier.just'    # copier::update/diff/recopy
 
 # Default: list available recipes
 default:

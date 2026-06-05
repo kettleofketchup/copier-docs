@@ -50,6 +50,9 @@ test: test-gitlab test-github
     grep -q "just docs::build"      {{OUT}}/gitlab/ci/docs.gitlab-ci.yml
     grep -q "docs-release-image"    {{OUT}}/gitlab/ci/docs.gitlab-ci.yml
     grep -q "just docs::build"      {{OUT}}/github/.github/workflows/docs.yml
+    echo "=== Generated justfile parses (both variants) ==="
+    just --justfile {{OUT}}/gitlab/justfile --list >/dev/null || { echo "gitlab justfile failed to parse"; exit 1; }
+    just --justfile {{OUT}}/github/justfile --list >/dev/null || { echo "github justfile failed to parse"; exit 1; }
     echo "=== Building generated site (github variant) ==="
     cd {{OUT}}/github
     uv sync
