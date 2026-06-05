@@ -1,5 +1,9 @@
 # Template development recipes — generate + verify test projects from this template.
 # Run with `uv run` so copier comes from the dev dependency group.
+#
+# Copier picks the latest git tag by default, so we generate from the *working
+# tree* instead: `git stash create` captures the staged/working state as a
+# throwaway commit and we point `--vcs-ref` at it (falling back to HEAD).
 
 OUT := ".copier-test"
 
@@ -7,8 +11,11 @@ OUT := ".copier-test"
 [no-cd]
 [group('copier')]
 test-gitlab:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ref=$(git stash create || true); ref=${ref:-HEAD}
     rm -rf {{OUT}}/gitlab
-    uv run copier copy . {{OUT}}/gitlab --trust --defaults \
+    uv run copier copy . {{OUT}}/gitlab --trust --defaults --vcs-ref "$ref" \
         -d project_name=demo-docs \
         -d ci_platform=gitlab \
         -d gitlab_url=gitlab.example.com \
@@ -18,8 +25,11 @@ test-gitlab:
 [no-cd]
 [group('copier')]
 test-github:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ref=$(git stash create || true); ref=${ref:-HEAD}
     rm -rf {{OUT}}/github
-    uv run copier copy . {{OUT}}/github --trust --defaults \
+    uv run copier copy . {{OUT}}/github --trust --defaults --vcs-ref "$ref" \
         -d project_name=demo-docs \
         -d ci_platform=github \
         -d github_registry=ghcr.io/acme/demo-docs
@@ -31,12 +41,15 @@ test: test-gitlab test-github
     #!/usr/bin/env bash
     set -euo pipefail
     echo "=== Asserting generated files ==="
-    test -f {{OUT}}/gitlab/.gitlab-ci.yml          || { echo "missing .gitlab-ci.yml"; exit 1; }
-    test ! -d {{OUT}}/gitlab/.github               || { echo ".github should not exist (gitlab)"; exit 1; }
-    test -f {{OUT}}/github/.github/workflows/ci.yml || { echo "missing ci.yml"; exit 1; }
-    test ! -f {{OUT}}/github/.gitlab-ci.yml         || { echo ".gitlab-ci.yml should not exist (github)"; exit 1; }
-    grep -q "just cicd::build" {{OUT}}/gitlab/.gitlab-ci.yml
-    grep -q "just cicd::build" {{OUT}}/github/.github/workflows/ci.yml
+    test -f {{OUT}}/gitlab/.gitlab-ci.yml                  || { echo "missing root .gitlab-ci.yml"; exit 1; }
+    test -f {{OUT}}/gitlab/ci/docs.gitlab-ci.yml           || { echo "missing ci/docs.gitlab-ci.yml"; exit 1; }
+    test ! -d {{OUT}}/gitlab/.github                       || { echo ".github should not exist (gitlab)"; exit 1; }
+    test -f {{OUT}}/github/.github/workflows/docs.yml         || { echo "missing docs.yml"; exit 1; }
+    test -f {{OUT}}/github/.github/workflows/docs-release.yml || { echo "missing docs-release.yml"; exit 1; }
+    test ! -f {{OUT}}/github/.gitlab-ci.yml                 || { echo ".gitlab-ci.yml should not exist (github)"; exit 1; }
+    grep -q "just docs::build"      {{OUT}}/gitlab/ci/docs.gitlab-ci.yml
+    grep -q "docs-release-image"    {{OUT}}/gitlab/ci/docs.gitlab-ci.yml
+    grep -q "just docs::build"      {{OUT}}/github/.github/workflows/docs.yml
     echo "=== Building generated site (github variant) ==="
     cd {{OUT}}/github
     uv sync

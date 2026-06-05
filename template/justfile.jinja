@@ -2,10 +2,9 @@ set quiet
 
 import 'just/dev.just'            # `just dev` — merged into root namespace
 
-mod docs 'just/docs.just'        # docs::live, docs::build, docs::validate, docs::clean
-mod docker 'just/docker.just'    # docker::build, docker::run
+mod docs 'just/docs.just'        # docs::live, docs::build, docs::lint, docs::validate,
+                                 # docs::clean, docs::image-build, docs::image-run
 mod version 'just/version.just'  # version::show, version::bump, version::tag
-mod cicd 'just/cicd.just'        # cicd::lint, cicd::build, cicd::pages, cicd::docker
 mod copier 'just/copier.just'    # copier::update, copier::diff, copier::recopy
 
 # Default: list available recipes

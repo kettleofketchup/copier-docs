@@ -1,0 +1,75 @@
+# Docs pipeline — isolated so it can be `include`d on its own or dropped alongside
+# other pipelines in a mixed repo. Jobs/stages are `docs`-namespaced; only the
+# GitLab Pages deploy keeps the reserved name `pages`.
+#
+# Reuse from another repo:
+#   include:
+#     - project: '<group>/<this-docs-repo>'
+#       file: 'ci/docs.gitlab-ci.yml'
+#       ref: main
+
+stages:
+  - docs-lint
+  - docs-build
+  - docs-pages
+  - docs-release
+
+.docs-env:
+  image: ghcr.io/astral-sh/uv:python3.12-bookworm
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends git curl
+    - curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+    - uv sync
+
+docs-lint:
+  stage: docs-lint
+  extends: .docs-env
+  script:
+    - just docs::lint
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+docs-build:
+  stage: docs-build
+  extends: .docs-env
+  script:
+    - just docs::build
+  artifacts:
+    paths:
+      - site
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+# GitLab Pages deploy. Must be named `pages`. Needs GitLab >= 17.9 for `pages.publish`.
+pages:
+  stage: docs-pages
+  extends: .docs-env
+  script:
+    - just docs::build
+  pages:
+    publish: site
+  artifacts:
+    paths:
+      - site
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Release image — versioned nginx image of the built docs, on vX.Y.Z tags only.
+docs-release-image:
+  stage: docs-release
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    IMAGE: "{{ gitlab_registry }}"
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  script:
+    - docker build -t "$IMAGE:$CI_COMMIT_TAG" -t "$IMAGE:latest" -f docker/Dockerfile.docs .
+    - docker push "$IMAGE:$CI_COMMIT_TAG"
+    - docker push "$IMAGE:latest"
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/

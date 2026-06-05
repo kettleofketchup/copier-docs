@@ -15,10 +15,10 @@ just docs::live     # live-reload preview at http://localhost:8000
 ## Common commands
 
 ```bash
-just docs::live       # local live-reload preview
-just docs::build      # build static site into site/
-just docs::validate   # lefthook checks (markdown/spelling/ruff) + clean build
-just docker::run      # serve the built site via nginx at http://localhost:8080
+just docs::live        # local live-reload preview
+just docs::build       # build static site into site/
+just docs::validate    # lint (markdown/spelling) + clean build
+just docs::image-run   # serve the built site via nginx at http://localhost:8080
 just version::bump patch && just version::tag   # cut a release tag
 ```
 
@@ -31,15 +31,21 @@ just copier::update   # pull the latest copier-docs changes (commit your work fi
 ## CI/CD
 
 {% if ci_platform == 'gitlab' -%}
-`.gitlab-ci.yml` runs lint + build on every push/MR, publishes the site to
-**GitLab Pages** on `{{ '$CI_DEFAULT_BRANCH' }}`, and pushes an nginx image to
-`{{ gitlab_registry }}`. CI jobs are thin wrappers around `just cicd::*`.
+The docs pipeline is isolated in **`ci/docs.gitlab-ci.yml`** (the root
+`.gitlab-ci.yml` just `include:`s it, so it drops into a mixed repo cleanly).
+Jobs are `docs`-namespaced and call `just docs::*`: `docs-lint` + `docs-build`
+on push/MR, **GitLab Pages** on `{{ '$CI_DEFAULT_BRANCH' }}`, and
+**`docs-release-image`** — a versioned nginx image pushed to
+`{{ gitlab_registry }}:<tag>` + `:latest` — only on `vX.Y.Z` tags.
 {%- else -%}
-`.github/workflows/ci.yml` runs lint + build on pushes/PRs and pushes an nginx
-image to `{{ github_registry }}` on tags; `.github/workflows/pages.yml` deploys
-the site to **GitHub Pages** on the default branch. Workflows are thin wrappers
-around `just cicd::*`.
+Three isolated workflows under `.github/workflows/`: **`docs.yml`** (lint + build
+on push/PR), **`docs-pages.yml`** (deploy to **GitHub Pages** on the default
+branch), and **`docs-release.yml`** — a versioned nginx image pushed to
+`{{ github_registry }}:<tag>` + `:latest` — only on `vX.Y.Z` tags. They call
+`just docs::*`.
 {%- endif %}
+
+Cut a release image by tagging: `just version::bump patch && just version::tag`.
 
 ## Editing the docs
 

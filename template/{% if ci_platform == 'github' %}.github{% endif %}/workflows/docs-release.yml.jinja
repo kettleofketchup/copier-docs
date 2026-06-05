@@ -1,0 +1,32 @@
+name: Docs Release Image
+
+# Build + push a versioned nginx image of the docs on vX.Y.Z tags.
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: {{ '${{ github.actor }}' }}
+          password: {{ '${{ secrets.GITHUB_TOKEN }}' }}
+
+      - name: Build and push docs image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.docs
+          push: true
+          tags: |
+            {{ github_registry }}:{{ '${{ github.ref_name }}' }}
+            {{ github_registry }}:latest
