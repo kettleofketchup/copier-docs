@@ -45,6 +45,14 @@ Copier performs a three-way merge against the version recorded in
 | Git hooks | lefthook (markdown lint, codespell, ruff) |
 | CI/CD | GitLab CI **or** GitHub Actions — thin wrappers calling `just cicd::*` |
 | Publish | GitLab Pages / GitHub Pages + nginx container image |
+| Theme | dark-purple slate palette + `docs/stylesheets/extra.css` (blended translucent header, styled content tabs, nav tab icons) |
+| Cards | reusable card snippets in `_includes/cards/`, included via `--8<--` into grid pages |
+| Build hygiene | `--clean --strict` builds; `scripts/relativize_links.py` makes output prefix-agnostic (Pages `/<project>/`); the Docker image vendors fonts/JS for offline serving |
+
+GitLab projects can also opt into an optional runner tag for docs jobs and a
+`dood` (docker-outside-of-docker) release build that uses the runner host's
+daemon instead of a `docker:dind` service. Setting `repo_url` adds a header
+repo link and an "edit this page" pencil to every page.
 
 ## Developing this template
 

@@ -98,3 +98,20 @@ Reuse shared snippets across pages with `pymdownx.snippets`. The glossary in
 ```text
 --8<-- "includes/abbreviations.md"
 ```
+
+## Reusable cards
+
+Card snippets live in `_includes/cards/` (one file per card) and can be
+included into a grid on any page — write internal links inside them
+root-absolute (`/page/`); `just docs::build` rewrites them to page-relative so
+they resolve at any include depth and under any site prefix:
+
+```text
+<div class="grid cards" markdown>
+--8<-- "_includes/cards/example.md"
+</div>
+```
+
+<div class="grid cards" markdown>
+--8<-- "_includes/cards/example.md"
+</div>

@@ -7,7 +7,11 @@ ENV UV_LINK_MODE=copy
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY . .
-RUN uv run --frozen --no-dev zensical build
+# Build, then vendor external assets (fonts + mermaid/glightbox) so the image
+# serves fully offline / airgapped. (:material-* icons are already inlined as
+# SVG at build time.)
+RUN uv run --frozen --no-dev zensical build --clean \
+ && uv run --frozen --no-dev python scripts/vendor_assets.py site
 
 # --- Stage 2: serve the built site with nginx ---
 FROM nginx:alpine

@@ -16,6 +16,10 @@ stages:
 
 .docs-env:
   image: ghcr.io/astral-sh/uv:python3.12-bookworm
+{%- if gitlab_runner_tag %}
+  tags:
+    - {{ gitlab_runner_tag }}
+{%- endif %}
   before_script:
     - apt-get update && apt-get install -y --no-install-recommends git curl
     - curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
@@ -60,13 +64,28 @@ pages:
 # Release image — versioned nginx image of the built docs, on vX.Y.Z tags only.
 docs-release-image:
   stage: docs-release
+{%- if docker_build_strategy == 'dood' %}
+  # dood (docker-outside-of-docker): build on the runner host's daemon, which
+  # already trusts any internal CA — no dind service, no per-job CA install.
+  tags:
+    - dood
+  image: docker:latest
+  variables:
+    IMAGE: "{{ gitlab_registry }}"
+    # per-job docker config — dood shares /root/.docker, so login there is "busy"
+    DOCKER_CONFIG: "$CI_PROJECT_DIR/.docker"
+  before_script:
+    - mkdir -p "$DOCKER_CONFIG"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+{%- else %}
   image: docker:latest
   services:
     - docker:dind
   variables:
     IMAGE: "{{ gitlab_registry }}"
   before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+{%- endif %}
   script:
     - docker build -t "$IMAGE:$CI_COMMIT_TAG" -t "$IMAGE:latest" -f docker/Dockerfile.docs .
     - docker push "$IMAGE:$CI_COMMIT_TAG"

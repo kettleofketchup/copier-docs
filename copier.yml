@@ -36,6 +36,11 @@ author:
   help: "Site author / owning team"
   default: "Docs team"
 
+repo_url:
+  type: str
+  help: "Repository web URL for the header repo link + 'edit this page' pencil (empty to disable)"
+  default: ""
+
 ci_platform:
   type: str
   help: "CI/CD platform for build + publish"
@@ -55,6 +60,21 @@ gitlab_registry:
   when: "{{ ci_platform == 'gitlab' }}"
   help: "Container registry path for the nginx docs image"
   default: "{{ gitlab_url }}:5050/{{ project_name }}"
+
+gitlab_runner_tag:
+  type: str
+  when: "{{ ci_platform == 'gitlab' }}"
+  help: "Runner tag for the docs build/lint jobs (empty for untagged runners)"
+  default: ""
+
+docker_build_strategy:
+  type: str
+  when: "{{ ci_platform == 'gitlab' }}"
+  help: "How the release image is built in CI"
+  default: dood
+  choices:
+    "dood — runner host's daemon (host CA trust; runner tagged 'dood')": dood
+    "docker:dind service (works on any docker runner)": dind
 
 github_registry:
   type: str
