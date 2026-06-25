@@ -17,6 +17,9 @@ live:
 build:
     uv run zensical build --clean --strict
     uv run python scripts/relativize_links.py site
+    # Offline 404 check — fails on missing assets / broken CSS url() that
+    # --strict misses (e.g. tab-icon masks under a /<project>/ serve-prefix).
+    uv run python scripts/check_links.py site
 
 # Lint docs: markdown syntax + spelling (CI calls this too)
 [no-cd]
