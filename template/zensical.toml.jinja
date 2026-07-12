@@ -9,6 +9,7 @@ site_dir = "site"
 use_directory_urls = true
 dev_addr = "localhost:8000"
 extra_css = ["stylesheets/extra.css"]
+extra_javascript = ["javascripts/mermaid-zoom.js"]
 {%- if repo_url %}
 repo_url = "{{ repo_url }}"
 repo_name = "{{ repo_url.rstrip('/').split('/')[-2:] | join('/') }}"

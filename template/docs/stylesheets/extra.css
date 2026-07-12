@@ -152,3 +152,56 @@
 [data-md-color-scheme="slate"] .md-typeset .grid.cards > ul > li:hover {
   border-color: var(--md-accent-fg-color);
 }
+
+/* ---- Mermaid click-to-zoom (mermaid-zoom.js) --------------------------- */
+.mzoom-src { cursor: zoom-in; }
+.mzoom-src svg { max-width: 100%; }
+
+body.mzoom-lock { overflow: hidden; }
+
+.mzoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: none;
+  background: rgba(8, 10, 16, 0.92);
+  overscroll-behavior: contain;
+  touch-action: none;
+}
+.mzoom-overlay.open { display: block; }
+
+.mzoom-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  cursor: grab;
+  will-change: transform;
+}
+.mzoom-canvas svg {
+  display: block;
+  width: 90vw;
+  max-width: 1400px;
+  height: auto;
+}
+
+.mzoom-controls {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  gap: 0.35rem;
+  z-index: 2001;
+}
+.mzoom-controls button {
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0.4rem;
+  background: rgba(30, 34, 44, 0.9);
+  color: #eef;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.mzoom-controls button:hover { background: rgba(60, 66, 82, 0.95); }
