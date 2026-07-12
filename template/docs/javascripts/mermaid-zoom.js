@@ -1,8 +1,9 @@
 // Click-to-zoom for Mermaid diagrams. Dependency-free (no CDN) so it works on
-// the airgapped darknet build. Click a diagram to open a fullscreen overlay;
-// scroll to zoom (around the cursor), drag to pan, +/-/reset controls, Esc or
-// click-backdrop to close. Progressive enhancement: if this never runs, the
-// static inline diagram is unaffected.
+// the airgapped darknet build. Each rendered diagram gets a visible ⛶ button
+// (top-right); clicking it — or anywhere on the diagram — opens a fullscreen
+// overlay: scroll to zoom (around the cursor), drag to pan, +/−/reset controls,
+// Esc or click-backdrop to close. Progressive enhancement: if this never runs,
+// the static inline diagram is unaffected.
 (function () {
   "use strict";
 
@@ -13,7 +14,19 @@
     if (!host.querySelector("svg")) return; // mermaid hasn't rendered yet
     host.dataset.mzoom = "1";
     host.classList.add("mzoom-src");
-    host.setAttribute("title", "Click to zoom");
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mzoom-btn";
+    btn.title = "Zoom / fullscreen";
+    btn.setAttribute("aria-label", "Zoom diagram");
+    btn.textContent = "⛶";
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      openOverlay(host.querySelector("svg"));
+    });
+    host.appendChild(btn);
+
     host.addEventListener("click", function () {
       openOverlay(host.querySelector("svg"));
     });
@@ -55,12 +68,12 @@
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     document.addEventListener("keydown", function (e) {
-      if (!overlay.classList.contains("open")) return;
-      if (e.key === "Escape") closeOverlay();
+      if (overlay.classList.contains("open") && e.key === "Escape") closeOverlay();
     });
   }
 
   function openOverlay(svg) {
+    if (!svg) return;
     ensureOverlay();
     canvas.innerHTML = "";
     var clone = svg.cloneNode(true);
@@ -84,19 +97,13 @@
     scale = s; tx = x; ty = y;
     canvas.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + scale + ")";
   }
-
   function zoomBy(factor, px, py) {
     var ns = Math.min(12, Math.max(0.2, scale * factor));
-    // keep the point (px,py) fixed while scaling
     tx = px - (px - tx) * (ns / scale);
     ty = py - (py - ty) * (ns / scale);
     setT(ns, tx, ty);
   }
-
-  function onWheel(e) {
-    e.preventDefault();
-    zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY);
-  }
+  function onWheel(e) { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY); }
   function onDown(e) { dragging = true; lastX = e.clientX; lastY = e.clientY; canvas.style.cursor = "grabbing"; }
   function onMove(e) {
     if (!dragging) return;
@@ -105,11 +112,9 @@
   }
   function onUp() { dragging = false; if (canvas) canvas.style.cursor = "grab"; }
 
-  // Mermaid renders SVGs asynchronously (and again on instant-nav). A
-  // MutationObserver re-scans whenever the DOM changes; makeZoomable is
-  // idempotent, so repeated scans are cheap.
-  var mo = new MutationObserver(scan);
-  mo.observe(document.documentElement, { childList: true, subtree: true });
-  if (document.readyState !== "loading") scan();
-  else document.addEventListener("DOMContentLoaded", scan);
+  // Mermaid renders SVGs asynchronously (and again on instant-nav). Re-scan on
+  // DOM changes plus a few delayed passes; makeZoomable is idempotent.
+  new MutationObserver(scan).observe(document.documentElement, { childList: true, subtree: true });
+  [0, 300, 1000, 2500].forEach(function (d) { setTimeout(scan, d); });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", scan);
 })();

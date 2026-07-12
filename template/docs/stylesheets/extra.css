@@ -154,8 +154,33 @@
 }
 
 /* ---- Mermaid click-to-zoom (mermaid-zoom.js) --------------------------- */
-.mzoom-src { cursor: zoom-in; }
+.mzoom-src { cursor: zoom-in; position: relative; }
 .mzoom-src svg { max-width: 100%; }
+
+/* visible "expand" affordance in the diagram corner */
+.mzoom-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 0.35rem;
+  background: rgba(40, 44, 54, 0.72);
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: zoom-in;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 3;
+}
+.mzoom-src:hover .mzoom-btn,
+.mzoom-btn:focus-visible { opacity: 1; }
+.mzoom-btn:hover { background: rgba(64, 70, 86, 0.95); }
 
 body.mzoom-lock { overflow: hidden; }
 
