@@ -16,10 +16,16 @@ live:
 [group('docs')]
 build:
     uv run zensical build --clean --strict
+    # Pull the theme's CDN assets (mermaid, glightbox, Google Fonts) into the
+    # site — needs network, cached in .cache/vendor/. Without this the built
+    # site still lazy-loads mermaid from unpkg.com and breaks offline.
+    uv run python scripts/vendor_assets.py site
     uv run python scripts/relativize_links.py site
-    # Offline 404 check — fails on missing assets / broken CSS url() that
+    # Local 404 check — fails on missing assets / broken CSS url() that
     # --strict misses (e.g. tab-icon masks under a /<project>/ serve-prefix).
     uv run python scripts/check_links.py site
+    # Offline check — fails if anything would be fetched from the internet.
+    uv run python scripts/check_offline.py site
 
 # Lint docs: markdown syntax + spelling (CI calls this too)
 [no-cd]

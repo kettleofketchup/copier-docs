@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Offline 404 check for a built site.
+"""Local 404 check for a built site.
 
 Crawls every *.html and *.css under <site_dir>, extracts local references
-(href / src / CSS url()), resolves each against the file tree, and fails if any
-target is missing. Catches the class of bug `zensical --strict` does NOT —
-missing static assets and broken CSS url() paths (e.g. tab-icon masks that 404
-when the site is served under a project sub-path).
+(href / src / srcset / CSS url()), resolves each against the file tree, and
+fails if any target is missing. Catches the class of bug `zensical --strict`
+does NOT — missing static assets and broken CSS url() paths (e.g. tab-icon
+masks that 404 when the site is served under a project sub-path).
 
 External (http://, https://, //host, mailto:, tel:, data:) and pure #anchor
-references are skipped — this is a local-asset existence check, not a network
-crawl, so it runs fully offline.
+references are skipped: this asks "does every local target exist", never "would
+this page hit the network" — that is check_offline.py's job, and assuming this
+check covered it is how the theme's CDN loads went unnoticed.
 
     check_links.py <site_dir> [--ignore SUBSTR]...   # exit 1 on any missing target
 
@@ -18,6 +19,7 @@ crawl, so it runs fully offline.
 catches NEW regressions. Run AFTER relativize_links.py so references are in their
 served form.
 """
+
 import glob
 import os
 import re
@@ -38,6 +40,7 @@ def resolve(site, src_file, ref):
     """Map a reference to a filesystem path inside `site`, or None if external."""
     if not is_local(ref):
         return None
+    # Strip query + fragment, percent-decode.
     ref = unquote(ref.split("#", 1)[0].split("?", 1)[0])
     if not ref:
         return None

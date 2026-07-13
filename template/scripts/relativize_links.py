@@ -12,6 +12,7 @@ prefix-agnostic like the rest of zensical's links.
 
     relativize_links.py <site_dir>
 """
+
 import glob
 import os
 import re
@@ -29,7 +30,8 @@ def rewrite(site, pattern, glob_pat):
         depth = os.path.relpath(path, site).count(os.sep)
         prefix = "../" * depth if depth else "./"
         s = open(path, encoding="utf-8").read()
-        out, n = pattern.subn(lambda m: m.group(1) + prefix, s)
+        # prefix bound per iteration: the lambda outlives the loop step (ruff B023).
+        out, n = pattern.subn(lambda m, prefix=prefix: m.group(1) + prefix, s)
         if n:
             open(path, "w", encoding="utf-8").write(out)
             rewritten += n
