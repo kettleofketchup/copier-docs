@@ -30,7 +30,11 @@ from urllib.parse import urlparse
 #                     it is never fetched. Vendoring plyr would drag in its own CDN
 #                     defaults (icon sprite, blank.mp4) for a feature we don't use.
 #                     If these docs ever gain a video lightbox, vendor plyr then.
-ALLOW = {"www.w3.org", "api.github.com", "cdn.plyr.io"}
+#   cdn.jsdelivr.net — pyodide's indexURL, passed to loadPyodide() only when a page
+#                     has an executable Python code block. No page here does. If you
+#                     start using them, vendor pyodide (a multi-MB wasm runtime plus
+#                     its package index) or those pages will not work offline.
+ALLOW = {"www.w3.org", "api.github.com", "cdn.plyr.io", "cdn.jsdelivr.net"}
 
 # Assets a browser actually loads. Third-party libraries are full of URLs in
 # error messages and license headers (mermaid alone has dozens), so inside

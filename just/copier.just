@@ -69,10 +69,15 @@ test: test-gitlab test-github
     echo "=== Building generated site (github variant) ==="
     cd {{OUT}}/github
     uv sync
-    uv run zensical build --strict
-    uv run python scripts/relativize_links.py site
+    # The real recipe, not a hand-rolled copy of it: this is how the missing
+    # vendor step went unnoticed — the test built the site its own way and so
+    # never ran what CI runs.
+    just docs::build
     test -f site/index.html || { echo "site/index.html not built"; exit 1; }
     test -f site/stylesheets/extra.css || { echo "extra.css not in built site"; exit 1; }
+    echo "=== Asserting the built site is offline-clean ==="
+    test -f site/assets/vendor/js/mermaid.min.js || { echo "mermaid not vendored"; exit 1; }
+    ! grep -rq "unpkg.com" site/assets/javascripts/ || { echo "bundle still points at unpkg"; exit 1; }
     echo "=== Template test passed; cleaning up ==="
     cd - >/dev/null
     rm -rf {{OUT}}
