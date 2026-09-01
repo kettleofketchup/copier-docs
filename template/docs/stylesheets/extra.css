@@ -154,8 +154,8 @@
 }
 
 /* ---- Mermaid click-to-zoom (mermaid-zoom.js) --------------------------- */
+/* wrapper injected around the shadow host — the button cannot live inside it */
 .mzoom-src { cursor: zoom-in; position: relative; }
-.mzoom-src svg { max-width: 100%; }
 
 /* visible "expand" affordance in the diagram corner */
 .mzoom-btn {
@@ -189,7 +189,8 @@ body.mzoom-lock { overflow: hidden; }
   inset: 0;
   z-index: 2000;
   display: none;
-  background: rgba(8, 10, 16, 0.92);
+  background: rgba(8, 10, 16, 0.97);
+  backdrop-filter: blur(3px);
   overscroll-behavior: contain;
   touch-action: none;
 }

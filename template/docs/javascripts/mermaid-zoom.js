@@ -4,16 +4,60 @@
 // overlay: scroll to zoom (around the cursor), drag to pan, +/−/reset controls,
 // Esc or click-backdrop to close. Progressive enhancement: if this never runs,
 // the static inline diagram is unaffected.
+//
+// Zensical renders each diagram into a CLOSED shadow root and replaces the
+// source <pre> with the shadow host:
+//
+//     let r = k("div", {class: "mermaid"});
+//     let {svg} = yield mermaid.render(id, pre.textContent);
+//     r.attachShadow({mode: "closed"}).innerHTML = svg;
+//     pre.replaceWith(r);
+//
+// Two consequences drive the design below:
+//
+//   1. The SVG is unreachable — a closed root leaves `host.shadowRoot` null and
+//      `host.querySelector("svg")` empty forever, so the overlay cannot clone
+//      the rendered diagram. Instead we snapshot each `<pre class="mermaid">`
+//      source at load (before zensical destroys it) and re-render on demand
+//      with the same global mermaid, which also yields a crisp SVG at any zoom.
+//   2. The button cannot be a child of the host — an element with a shadow root
+//      renders only its shadow tree unless that tree has a <slot>, so light-DOM
+//      children are invisible. We wrap the host and position the button there.
 (function () {
   "use strict";
 
   var overlay, canvas, scale, tx, ty, dragging, lastX, lastY;
+  var anchors = [];
+  var seq = 0;
 
-  function makeZoomable(host) {
+  // Runs while the source <pre> elements are still in the document: this script
+  // executes immediately after the theme bundle, and the mermaid mount is async
+  // (it waits on the mermaid script load), so the text is still here.
+  //
+  // Each source is pinned to a hidden marker inserted directly before its <pre>,
+  // not to its index. Diagrams mount on scroll-into-view, so they can render in
+  // any order; indexing `div.mermaid` would pair a host with another diagram's
+  // source. The replacement host is always the marker's next sibling.
+  function captureSources() {
+    var blocks = document.querySelectorAll("pre.mermaid");
+    for (var i = 0; i < blocks.length; i++) {
+      var marker = document.createElement("span");
+      marker.className = "mzoom-anchor";
+      marker.style.display = "none";
+      blocks[i].parentNode.insertBefore(marker, blocks[i]);
+      anchors.push({ marker: marker, src: blocks[i].textContent });
+    }
+  }
+
+  function makeZoomable(host, src) {
     if (host.dataset.mzoom) return;
-    if (!host.querySelector("svg")) return; // mermaid hasn't rendered yet
+    if (!src) return; // no captured source — leave the diagram alone
     host.dataset.mzoom = "1";
-    host.classList.add("mzoom-src");
+
+    var wrap = document.createElement("div");
+    wrap.className = "mzoom-src";
+    host.parentNode.insertBefore(wrap, host);
+    wrap.appendChild(host);
 
     var btn = document.createElement("button");
     btn.type = "button";
@@ -23,18 +67,22 @@
     btn.textContent = "⛶";
     btn.addEventListener("click", function (e) {
       e.stopPropagation();
-      openOverlay(host.querySelector("svg"));
+      openOverlay(src);
     });
-    host.appendChild(btn);
+    wrap.appendChild(btn);
 
-    host.addEventListener("click", function () {
-      openOverlay(host.querySelector("svg"));
+    wrap.addEventListener("click", function () {
+      openOverlay(src);
     });
   }
 
   function scan() {
-    var nodes = document.querySelectorAll(".mermaid");
-    for (var i = 0; i < nodes.length; i++) makeZoomable(nodes[i]);
+    for (var i = 0; i < anchors.length; i++) {
+      var host = anchors[i].marker.nextElementSibling;
+      if (host && host.tagName === "DIV" && host.classList.contains("mermaid")) {
+        makeZoomable(host, anchors[i].src);
+      }
+    }
   }
 
   function ensureOverlay() {
@@ -72,18 +120,24 @@
     });
   }
 
-  function openOverlay(svg) {
-    if (!svg) return;
+  function openOverlay(src) {
+    if (typeof mermaid === "undefined" || !mermaid.render) return;
     ensureOverlay();
     canvas.innerHTML = "";
-    var clone = svg.cloneNode(true);
-    clone.removeAttribute("style");
-    clone.removeAttribute("width");
-    clone.removeAttribute("height");
-    canvas.appendChild(clone);
     document.body.classList.add("mzoom-lock");
     overlay.classList.add("open");
     setT(1, 0, 0);
+    Promise.resolve(mermaid.render("mzoom_svg_" + seq++, src)).then(function (res) {
+      if (!overlay.classList.contains("open")) return; // closed while rendering
+      canvas.innerHTML = res.svg;
+      var svg = canvas.querySelector("svg");
+      if (svg) {
+        svg.removeAttribute("width");
+        svg.removeAttribute("height");
+        svg.style.maxWidth = "none";
+      }
+      setT(1, 0, 0);
+    }, closeOverlay);
   }
 
   function closeOverlay() {
@@ -112,8 +166,10 @@
   }
   function onUp() { dragging = false; if (canvas) canvas.style.cursor = "grab"; }
 
-  // Mermaid renders SVGs asynchronously (and again on instant-nav). Re-scan on
-  // DOM changes plus a few delayed passes; makeZoomable is idempotent.
+  captureSources();
+
+  // Diagrams mount asynchronously and one at a time (each replaces its <pre>).
+  // Re-scan on DOM changes plus a few delayed passes; makeZoomable is idempotent.
   new MutationObserver(scan).observe(document.documentElement, { childList: true, subtree: true });
   [0, 300, 1000, 2500].forEach(function (d) { setTimeout(scan, d); });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", scan);
