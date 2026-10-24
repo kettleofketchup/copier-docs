@@ -15,7 +15,7 @@ stages:
   - docs-release
 
 .docs-env:
-  image: ghcr.io/astral-sh/uv:python3.12-bookworm
+  image: ghcr.io/astral-sh/uv:python3.14-trixie
 {%- if gitlab_runner_tag %}
   tags:
     - {{ gitlab_runner_tag }}
