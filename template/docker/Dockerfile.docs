@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- Stage 1: build the static site with uv + zensical ---
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim AS builder
 WORKDIR /docs
 ENV UV_LINK_MODE=copy
 COPY pyproject.toml uv.lock ./
