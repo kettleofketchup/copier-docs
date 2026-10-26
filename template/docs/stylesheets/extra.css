@@ -184,6 +184,29 @@
 
 body.mzoom-lock { overflow: hidden; }
 
+/* Copy / download buttons under each diagram */
+.mzoom-export {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin: 0.25em 0 1em;
+}
+.mzoom-export button {
+  font-size: 0.65rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.2rem;
+  background: var(--md-code-bg-color);
+  color: var(--md-default-fg-color--light);
+  cursor: pointer;
+}
+.mzoom-export button:hover,
+.mzoom-export button:focus-visible {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+}
+
 .mzoom-overlay {
   position: fixed;
   inset: 0;

@@ -1,9 +1,10 @@
-// Click-to-zoom for Mermaid diagrams. Dependency-free (no CDN) so it works on
-// the airgapped darknet build. Each rendered diagram gets a visible ⛶ button
-// (top-right); clicking it — or anywhere on the diagram — opens a fullscreen
-// overlay: scroll to zoom (around the cursor), drag to pan, +/−/reset controls,
-// Esc or click-backdrop to close. Progressive enhancement: if this never runs,
-// the static inline diagram is unaffected.
+// Click-to-zoom and export for Mermaid diagrams. Dependency-free (no CDN) so it
+// works on the airgapped darknet build. Each rendered diagram gets a visible ⛶
+// button (top-right); clicking it — or anywhere on the diagram — opens a
+// fullscreen overlay: scroll to zoom (around the cursor), drag to pan, +/−/reset
+// controls, Esc or click-backdrop to close. Below each diagram, Copy image /
+// Download PNG / Copy Mermaid export it for pasting elsewhere. Progressive
+// enhancement: if this never runs, the static inline diagram is unaffected.
 //
 // Zensical renders each diagram into a CLOSED shadow root and replaces the
 // source <pre> with the shadow host:
@@ -74,6 +75,171 @@
     wrap.addEventListener("click", function () {
       openOverlay(src);
     });
+
+    wrap.parentNode.insertBefore(exportBar(src), wrap.nextSibling);
+  }
+
+  // ---- Export ---------------------------------------------------------------
+  // Re-rendered in the site's theme with SVG text labels: an HTML label
+  // (foreignObject) taints the canvas, always in Safari. The theme colours HTML
+  // labels with `color`, so SVG text needs its `fill` set to match. Edges are
+  // white over a black halo with outlined arrowheads, so the PNG reads on a
+  // black or a white background.
+  var EXPORT_INIT = '%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%\n';
+  var LABEL_CSS =
+    ".label text, .label tspan { fill: var(--md-mermaid-label-fg-color) !important; }" +
+    ".edgeLabel text, .edgeLabel tspan { fill: var(--md-mermaid-edge-color) !important; }" +
+    ".edgeLabel rect { fill: var(--md-default-bg-color) !important; opacity: 1 !important; }" +
+    "text { font-family: var(--md-mermaid-font-family); }" +
+    ".flowchart-link { stroke: #fff !important; stroke-width: 1.5px !important; }" +
+    ".flowchart-link.export-halo { stroke: #000 !important; stroke-width: 4px !important; }" +
+    "marker path { fill: #fff !important; stroke: #000 !important; stroke-width: 1px !important;" +
+    " stroke-dasharray: none !important; }";
+  // Node and label fills are translucent and borrow the page colour behind them;
+  // flatten them onto it, or a transparent PNG shows pale boxes and unreadable
+  // light text. Edge labels get the page colour as a solid box for the same reason.
+  var OPAQUE_VARS = ["--md-mermaid-node-bg-color", "--md-mermaid-label-bg-color", "--md-default-bg-color"];
+  var EXPORT_SCALE = 2;
+  // The clipboard API exists only on https/localhost; Download PNG works anywhere.
+  var canCopy = !!(window.isSecureContext && navigator.clipboard);
+
+  function exportBar(src) {
+    var bar = document.createElement("div");
+    bar.className = "mzoom-export";
+    if (canCopy && typeof ClipboardItem !== "undefined") {
+      bar.appendChild(exportBtn("Copy image", "Copied", function () {
+        // A promise, not an awaited blob, so Safari still counts it as part of the click.
+        return navigator.clipboard.write([new ClipboardItem({ "image/png": toPng(src) })]);
+      }));
+    }
+    bar.appendChild(exportBtn("Download PNG", "Saved", function () {
+      return toPng(src).then(function (blob) { download(blob, "diagram.png"); });
+    }));
+    if (canCopy) {
+      bar.appendChild(exportBtn("Copy Mermaid", "Copied", function () {
+        return navigator.clipboard.writeText(src);
+      }));
+    }
+    return bar;
+  }
+
+  function exportBtn(label, doneLabel, action) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = label;
+    btn.addEventListener("click", function () {
+      var result;
+      try { result = Promise.resolve(action()); } catch (err) { result = Promise.reject(err); }
+      result.then(
+        function () { btn.textContent = doneLabel; },
+        function (err) { console.error("mermaid export failed", err); btn.textContent = "Failed"; }
+      ).then(function () {
+        setTimeout(function () { btn.textContent = label; }, 1500);
+      });
+    });
+    return btn;
+  }
+
+  function toPng(src) {
+    if (typeof mermaid === "undefined" || !mermaid.render) {
+      return Promise.reject(new Error("mermaid is not loaded"));
+    }
+    return Promise.resolve(mermaid.render("mzoom_png_" + seq++, EXPORT_INIT + src)).then(function (res) {
+      var svg = new DOMParser().parseFromString(res.svg, "image/svg+xml").documentElement;
+      var edges = svg.querySelectorAll("path.flowchart-link");
+      for (var e = 0; e < edges.length; e++) {
+        var halo = edges[e].cloneNode(false);
+        halo.classList.add("export-halo");
+        halo.removeAttribute("id");
+        halo.removeAttribute("marker-start");
+        halo.removeAttribute("marker-end");
+        edges[e].parentNode.insertBefore(halo, edges[e]);
+      }
+      var style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+      style.textContent = LABEL_CSS;
+      svg.appendChild(style);
+      // The theme's colours are page CSS variables, which mean nothing inside an image.
+      var lookup = pageColours(getComputedStyle(document.body));
+      var styles = svg.querySelectorAll("style");
+      for (var i = 0; i < styles.length; i++) styles[i].textContent = resolveVars(styles[i].textContent, lookup);
+      var box = svg.getAttribute("viewBox").split(/[\s,]+/).map(Number);
+      var w = box[2], h = box[3];
+      svg.setAttribute("width", w);
+      svg.setAttribute("height", h);
+      svg.removeAttribute("style");
+      var url = URL.createObjectURL(
+        new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" })
+      );
+      return loadImage(url).then(function (img) {
+        var c = document.createElement("canvas");
+        c.width = Math.ceil(w * EXPORT_SCALE);
+        c.height = Math.ceil(h * EXPORT_SCALE);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        return new Promise(function (resolve, reject) {
+          c.toBlob(function (blob) {
+            if (blob) resolve(blob); else reject(new Error("toBlob failed"));
+          }, "image/png");
+        });
+      }).then(
+        function (blob) { URL.revokeObjectURL(url); return blob; },
+        function (err) { URL.revokeObjectURL(url); throw err; }
+      );
+    });
+  }
+
+  function pageColours(page) {
+    var base = page.getPropertyValue("--md-default-bg-color").trim() || page.backgroundColor;
+    return function (name) {
+      var value = page.getPropertyValue(name).trim();
+      return value && OPAQUE_VARS.indexOf(name) !== -1 ? flatten(value, base) : value;
+    };
+  }
+
+  function flatten(colour, base) {
+    var top = rgba(colour);
+    if (top[3] >= 1) return colour;
+    var under = rgba(base);
+    var mix = function (i) { return Math.round(top[i] * top[3] + under[i] * (1 - top[3])); };
+    return "rgb(" + mix(0) + ", " + mix(1) + ", " + mix(2) + ")";
+  }
+
+  // Let the browser parse any CSS colour by painting one pixel of it.
+  function rgba(colour) {
+    var ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+    ctx.fillStyle = colour;
+    ctx.fillRect(0, 0, 1, 1);
+    var d = ctx.getImageData(0, 0, 1, 1).data;
+    return [d[0], d[1], d[2], d[3] / 255];
+  }
+
+  function resolveVars(css, lookup) {
+    var VAR = /var\(\s*(--[\w-]+)\s*(?:,\s*([^()]*))?\)/g;
+    for (var pass = 0; pass < 5 && css.indexOf("var(") !== -1; pass++) {
+      css = css.replace(VAR, function (_, name, fallback) {
+        return lookup(name) || fallback || "initial";
+      });
+    }
+    return css;
+  }
+
+  function loadImage(url) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error("diagram image failed to load")); };
+      img.src = url;
+    });
+  }
+
+  function download(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 0);
   }
 
   function scan() {
